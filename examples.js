@@ -1,5 +1,6 @@
 // examples.js - Usage examples for the Minecraft NBT library
 const minecraftNBT = require('./minecraft-nbt');
+const { InventoryManager } = minecraftNBT;
 
 async function examples() {
     console.log('=== Minecraft NBT Library Examples ===\n');
@@ -217,6 +218,9 @@ async function examples() {
     
     console.log('✓ File detection examples completed\n');
 
+    // Example 9: Inventory Management
+    await inventoryManagementExample();
+
     console.log('=== All examples completed! ===');
 }
 
@@ -279,16 +283,73 @@ function performanceTest() {
     console.log('✓ Performance tests completed');
 }
 
+// Example 9: Inventory Management
+async function inventoryManagementExample() {
+    console.log('\n=== Inventory Management Example ===');
+    
+    // Create sample player data with inventory
+    const playerData = minecraftNBT.createCompound({
+        Health: 20.0,
+        Inventory: [
+            {
+                id: 'minecraft:diamond_sword',
+                Count: 1,
+                Slot: 0,
+                tag: {
+                    Enchantments: [
+                        { id: 'minecraft:sharpness', lvl: 5 }
+                    ]
+                }
+            },
+            {
+                id: 'minecraft:stone',
+                Count: 64,
+                Slot: 1
+            },
+            {
+                id: 'minecraft:diamond',
+                Count: 32,
+                Slot: 2
+            }
+        ]
+    });
+
+    // Create inventory manager
+    const inventory = new InventoryManager(playerData);
+    
+    console.log('Initial inventory:');
+    console.table(inventory.listItems());
+    
+    // Remove items by slot
+    inventory.removeBySlot(1);
+    console.log('After removing slot 1:');
+    console.table(inventory.listItems());
+    
+    // Remove items by ID
+    inventory.removeByItemId('minecraft:diamond', 10);
+    console.log('After removing 10 diamonds:');
+    console.table(inventory.listItems());
+    
+    // Quick operations using main library
+    await testOperation('Clear inventory', async () => {
+        await minecraftNBT.clearInventory('test_player.dat');
+    });
+    
+    console.log('✓ Inventory management example completed');
+}
+
 // Export functions for use in other files
 module.exports = {
     examples,
     testOperation,
-    performanceTest
+    performanceTest,
+    inventoryManagementExample
 };
 
 // Run examples if this file is executed directly
 if (require.main === module) {
     examples()
+        .then(() => inventoryManagementExample())
         .then(() => performanceTest())
         .catch(console.error);
 }

@@ -5,11 +5,221 @@ const { MCAFile } = require('./mca-handler');
 const fs = require('fs').promises;
 const path = require('path');
 
+// Inventory Management Classes
+class InventoryManager {
+    constructor(playerData) {
+        this.playerData = playerData;
+        this.minecraftNBT = require('./minecraft-nbt'); // Avoid circular dependency
+    }
+
+    getInventory() {
+        const inventory = this.getValue('Inventory');
+        return inventory?.value?.value || [];
+    }
+
+    setInventory(newInventory) {
+        const inventoryTag = {
+            type: 'list',
+            value: {
+                type: 'compound',
+                value: newInventory
+            }
+        };
+        this.setValue('Inventory', inventoryTag);
+    }
+
+    getValue(path) {
+        const parts = path.split('.');
+        let current = this.playerData;
+        
+        for (const part of parts) {
+            if (!current || typeof current !== 'object') return undefined;
+            
+            if (current.type === 'compound' && current.value && current.value[part]) {
+                current = current.value[part];
+            } else if (current.type === 'list' && current.value && !isNaN(part)) {
+                const index = parseInt(part);
+                if (index >= 0 && index < current.value.value.length) {
+                    current = {
+                        type: current.value.type,
+                        value: current.value.value[index]
+                    };
+                } else {
+                    return undefined;
+                }
+            } else {
+                return undefined;
+            }
+        }
+        
+        return current;
+    }
+
+    setValue(path, newValue) {
+        const parts = path.split('.');
+        const lastPart = parts.pop();
+        let current = this.playerData;
+        
+        for (const part of parts) {
+            if (!current || typeof current !== 'object') {
+                throw new Error(`Invalid path: ${path}`);
+            }
+            
+            if (current.type === 'compound' && current.value && current.value[part]) {
+                current = current.value[part];
+            } else if (current.type === 'list' && current.value && !isNaN(part)) {
+                const index = parseInt(part);
+                if (index >= 0 && index < current.value.value.length) {
+                    current = {
+                        type: current.value.type,
+                        value: current.value.value[index]
+                    };
+                } else {
+                    throw new Error(`List index out of bounds: ${index}`);
+                }
+            } else {
+                throw new Error(`Invalid path: ${path}`);
+            }
+        }
+        
+        if (current.type === 'compound' && current.value) {
+            current.value[lastPart] = newValue;
+        } else {
+            throw new Error(`Cannot set value on ${current.type} type`);
+        }
+        
+        return this.playerData;
+    }
+
+    removeBySlot(slot) {
+        const inventory = this.getInventory();
+        const initialCount = inventory.length;
+        
+        const newInventory = inventory.filter(item => {
+            const itemSlot = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Slot');
+            return itemSlot?.value !== slot;
+        });
+        
+        this.setInventory(newInventory);
+        return initialCount - newInventory.length;
+    }
+
+    removeByItemId(itemId, count = -1) {
+        const inventory = this.getInventory();
+        let removedCount = 0;
+        const newInventory = [];
+        
+        for (const item of inventory) {
+            const id = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'id');
+            const itemCount = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Count');
+            
+            if (id?.value === itemId && (count === -1 || removedCount < count)) {
+                if (count === -1) {
+                    removedCount += itemCount?.value || 1;
+                } else {
+                    const currentItemCount = itemCount?.value || 1;
+                    const toRemove = Math.min(currentItemCount, count - removedCount);
+                    removedCount += toRemove;
+                    
+                    if (currentItemCount > toRemove) {
+                        const newCount = currentItemCount - toRemove;
+                        this.setValue.call({ playerData: { type: 'compound', value: item } }, 'Count', { type: 'byte', value: newCount });
+                        newInventory.push(item);
+                    }
+                }
+            } else {
+                newInventory.push(item);
+            }
+        }
+        
+        this.setInventory(newInventory);
+        return removedCount;
+    }
+
+    removeByPartialName(partialName, count = -1) {
+        const inventory = this.getInventory();
+        let removedCount = 0;
+        const newInventory = [];
+        
+        for (const item of inventory) {
+            const id = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'id');
+            const itemCount = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Count');
+            
+            if (id?.value && id.value.includes(partialName) && (count === -1 || removedCount < count)) {
+                if (count === -1) {
+                    removedCount += itemCount?.value || 1;
+                } else {
+                    const currentItemCount = itemCount?.value || 1;
+                    const toRemove = Math.min(currentItemCount, count - removedCount);
+                    removedCount += toRemove;
+                    
+                    if (currentItemCount > toRemove) {
+                        const newCount = currentItemCount - toRemove;
+                        this.setValue.call({ playerData: { type: 'compound', value: item } }, 'Count', { type: 'byte', value: newCount });
+                        newInventory.push(item);
+                    }
+                }
+            } else {
+                newInventory.push(item);
+            }
+        }
+        
+        this.setInventory(newInventory);
+        return removedCount;
+    }
+
+    removeBySlotRange(minSlot, maxSlot) {
+        const inventory = this.getInventory();
+        let removedCount = 0;
+        const newInventory = [];
+        
+        for (const item of inventory) {
+            const slot = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Slot');
+            const slotValue = slot?.value;
+            
+            if (slotValue >= minSlot && slotValue <= maxSlot) {
+                const itemCount = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Count');
+                removedCount += itemCount?.value || 1;
+            } else {
+                newInventory.push(item);
+            }
+        }
+        
+        this.setInventory(newInventory);
+        return removedCount;
+    }
+
+    clearInventory() {
+        const inventory = this.getInventory();
+        const itemCount = inventory.length;
+        this.setInventory([]);
+        return itemCount;
+    }
+
+    listItems() {
+        const inventory = this.getInventory();
+        return inventory.map(item => {
+            const id = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'id');
+            const count = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Count');
+            const slot = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'Slot');
+            const tag = this.getValue.call({ playerData: { type: 'compound', value: item } }, 'tag');
+            
+            return {
+                id: id?.value,
+                count: count?.value,
+                slot: slot?.value,
+                hasEnchantments: tag ? !!this.getValue.call({ playerData: { type: 'compound', value: tag } }, 'Enchantments') : false
+            };
+        });
+    }
+}
+
 class MinecraftNBT {
     constructor() {
         this.NBT = NBT;
         this.SNBTConverter = SNBTConverter;
         this.MCAFile = MCAFile;
+        this.InventoryManager = InventoryManager;
         this.TAG_TYPES = TAG_TYPES;
         this.TYPE_NAMES = TYPE_NAMES;
     }
@@ -393,6 +603,42 @@ class MinecraftNBT {
                 return `${type}(${tag.value})`;
         }
     }
+
+    // Inventory management methods
+    createInventoryManager(playerData) {
+        return new InventoryManager(playerData);
+    }
+
+    // Quick inventory operations
+    async removeInventorySlot(playerFile, slot) {
+        const data = await this.readDATFile(playerFile);
+        const inventory = new InventoryManager(data);
+        const removed = inventory.removeBySlot(slot);
+        await this.writeDATFile(playerFile, data);
+        return removed;
+    }
+
+    async removeInventoryItem(playerFile, itemId, count = -1) {
+        const data = await this.readDATFile(playerFile);
+        const inventory = new InventoryManager(data);
+        const removed = inventory.removeByItemId(itemId, count);
+        await this.writeDATFile(playerFile, data);
+        return removed;
+    }
+
+    async clearInventory(playerFile) {
+        const data = await this.readDATFile(playerFile);
+        const inventory = new InventoryManager(data);
+        const removed = inventory.clearInventory();
+        await this.writeDATFile(playerFile, data);
+        return removed;
+    }
+
+    async listInventory(playerFile) {
+        const data = await this.readDATFile(playerFile);
+        const inventory = new InventoryManager(data);
+        return inventory.listItems();
+    }
 }
 
 // Create and export the main instance
@@ -400,6 +646,7 @@ const minecraftNBT = new MinecraftNBT();
 
 module.exports = minecraftNBT;
 module.exports.MinecraftNBT = MinecraftNBT;
+module.exports.InventoryManager = InventoryManager;
 module.exports.NBT = NBT;
 module.exports.SNBTConverter = SNBTConverter;
 module.exports.MCAFile = MCAFile;

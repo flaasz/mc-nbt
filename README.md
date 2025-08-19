@@ -15,6 +15,7 @@ A comprehensive Node.js library for reading, writing, and manipulating Minecraft
 - **Data Integrity**: Preserves exact data types and values without corruption
 - **Auto-detection**: Automatically detects file types based on extension and content
 - **Chunk Manipulation**: Full support for reading and writing individual chunks in region files
+- **Inventory Management**: Complete player inventory manipulation (add, remove, modify items)
 - **Validation**: Built-in validation for NBT data structures
 - **High Performance**: Optimized binary parsing with minimal memory overhead
 
@@ -142,6 +143,46 @@ console.log('Region bounds:', mca.getRegionBounds());
 await mca.save('modified_region.mca');
 ```
 
+### Inventory Management
+
+```javascript
+const { InventoryManager } = require('minecraft-nbt-lib');
+
+// Load player data
+const playerData = await minecraftNBT.readDATFile('playerdata/player.dat');
+const inventory = new InventoryManager(playerData);
+
+// Remove items by slot
+inventory.removeBySlot(0); // Remove item in hotbar slot 0
+
+// Remove items by ID
+inventory.removeByItemId('minecraft:stone'); // Remove all stone
+inventory.removeByItemId('minecraft:diamond', 5); // Remove up to 5 diamonds
+
+// Remove items by partial name
+inventory.removeByPartialName('diamond'); // Remove all diamond items
+
+// Remove by slot range
+inventory.removeBySlotRange(0, 8); // Clear hotbar (slots 0-8)
+inventory.removeBySlotRange(36, 39); // Clear armor slots
+
+// List current inventory
+const items = inventory.listItems();
+console.table(items);
+
+// Clear entire inventory
+inventory.clearInventory();
+
+// Save changes
+await minecraftNBT.writeDATFile('playerdata/player.dat', playerData);
+
+// Quick utility functions
+await minecraftNBT.removeInventorySlot('player.dat', 0);
+await minecraftNBT.removeInventoryItem('player.dat', 'minecraft:stone');
+await minecraftNBT.clearInventory('player.dat');
+const items = await minecraftNBT.listInventory('player.dat');
+```
+
 ## Data Types
 
 The library supports all NBT tag types with proper JavaScript mappings:
@@ -160,6 +201,59 @@ The library supports all NBT tag types with proper JavaScript mappings:
 | LongArray | Array<BigInt> | `{ type: 'long_array', value: [100n, 200n] }` |
 | List | Object | `{ type: 'list', value: { type: 'string', value: ['a', 'b'] } }` |
 | Compound | Object | `{ type: 'compound', value: { key: tag } }` |
+
+## Inventory Management
+
+### Inventory Structure
+
+Minecraft inventory is stored as a `list` of `compound` tags where each item contains:
+- **id**: Item identifier (e.g., `minecraft:diamond_sword`)
+- **Count**: Stack size (1-64 for most items)
+- **Slot**: Inventory slot number (0-40+)
+- **tag**: Optional enchantments, durability, custom data
+
+### Slot Reference
+
+| Slot Range | Description |
+|------------|-------------|
+| 0-8 | Hotbar |
+| 9-35 | Main inventory |
+| 36-39 | Armor (boots, leggings, chestplate, helmet) |
+| 40 | Offhand |
+| 103-106 | Armor slots (alternative numbering) |
+
+### InventoryManager Methods
+
+```javascript
+const { InventoryManager } = minecraftNBT;
+const inventory = new InventoryManager(playerData);
+
+// Core removal methods
+inventory.removeBySlot(slot)                    // Remove by slot number
+inventory.removeByItemId(itemId, count = -1)    // Remove by item ID
+inventory.removeByPartialName(partial, count)   // Remove by name containing text
+inventory.removeBySlotRange(min, max)           // Remove from slot range
+inventory.clearInventory()                      // Remove all items
+
+// Information methods
+inventory.listItems()                           // Get all items with details
+inventory.getInventory()                        // Get raw inventory array
+inventory.setInventory(newInventory)            // Set entire inventory
+
+// Example item structure
+const item = {
+    id: "minecraft:diamond_sword",
+    Count: 1,
+    Slot: 0,
+    tag: {
+        Enchantments: [
+            { id: "minecraft:sharpness", lvl: 5 },
+            { id: "minecraft:unbreaking", lvl: 3 }
+        ],
+        Damage: 0
+    }
+};
+```
 
 ## Examples
 
@@ -252,6 +346,92 @@ async function processRegion() {
 }
 ```
 
+### Complete Inventory Management
+
+```javascript
+async function managePlayerInventory() {
+    const { InventoryManager } = minecraftNBT;
+    
+    // Load player data
+    const playerData = await minecraftNBT.readDATFile('playerdata/player.dat');
+    const inventory = new InventoryManager(playerData);
+    
+    // List current inventory
+    console.log('Current inventory:');
+    console.table(inventory.listItems());
+    
+    // Remove specific items
+    inventory.removeBySlot(0); // Remove hotbar slot 0
+    inventory.removeByItemId('minecraft:stone', 32); // Remove up to 32 stone
+    inventory.removeByPartialName('diamond'); // Remove all diamond items
+    
+    // Clear equipment slots
+    inventory.removeBySlotRange(36, 39); // Clear armor
+    inventory.removeBySlotRange(0, 8); // Clear hotbar
+    
+    // Add new items
+    const newSword = minecraftNBT.createCompound({
+        id: 'minecraft:netherite_sword',
+        Count: 1,
+        Slot: 0,
+        tag: {
+            Enchantments: [
+                { id: 'minecraft:sharpness', lvl: 5 },
+                { id: 'minecraft:looting', lvl: 3 },
+                { id: 'minecraft:unbreaking', lvl: 3 }
+            ]
+        }
+    });
+    
+    // Add to inventory manually
+    const currentInventory = inventory.getInventory();
+    currentInventory.push(newSword.value);
+    inventory.setInventory(currentInventory);
+    
+    // Save changes
+    await minecraftNBT.writeDATFile('playerdata/player.dat', playerData);
+    console.log('Inventory updated successfully!');
+}
+
+// Quick inventory operations
+async function quickInventoryOps() {
+    // One-liner operations
+    await minecraftNBT.removeInventorySlot('player.dat', 0);
+    await minecraftNBT.removeInventoryItem('player.dat', 'minecraft:stone');
+    await minecraftNBT.clearInventory('player.dat');
+    
+    // List inventory
+    const items = await minecraftNBT.listInventory('player.dat');
+    console.table(items);
+}
+
+// Remove specific item types
+async function removeItemTypes() {
+    const playerData = await minecraftNBT.readDATFile('playerdata/player.dat');
+    const inventory = new InventoryManager(playerData);
+    
+    // Remove all weapons
+    inventory.removeByPartialName('sword');
+    inventory.removeByPartialName('axe');
+    inventory.removeByPartialName('bow');
+    
+    // Remove all food
+    const foodItems = ['bread', 'apple', 'beef', 'pork', 'chicken', 'fish'];
+    foodItems.forEach(food => inventory.removeByPartialName(food));
+    
+    // Remove damaged items (custom logic)
+    const items = inventory.listItems();
+    items.forEach(item => {
+        if (item.id && item.id.includes('_pickaxe')) {
+            inventory.removeBySlot(item.slot);
+        }
+    });
+    
+    await minecraftNBT.writeDATFile('playerdata/player.dat', playerData);
+}
+```
+```
+
 ### SNBT and JSON Conversion
 
 ```javascript
@@ -330,5 +510,8 @@ Contributions are welcome! Please read the contributing guidelines and submit pu
 - Initial release
 - Full NBT, DAT, and MCA file support
 - SNBT and JSON conversion
+- Complete inventory management system
+- Player inventory manipulation (add, remove, modify items by slot or ID)
+- Slot-based and name-based item removal
 - Comprehensive validation and error handling
 - Complete test suite and documentation
