@@ -113,7 +113,12 @@ jobs:
           else
             VERSION="${{ steps.release_version.outputs.version }}"
           fi
-          npm version $VERSION --no-git-tag-version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if [ "$VERSION" != "$CURRENT_VERSION" ]; then
+            npm version $VERSION --no-git-tag-version
+          else
+            echo "Version is already $CURRENT_VERSION, skipping version update."
+          fi
 
       - name: Build package
         run: |
