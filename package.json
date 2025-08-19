@@ -19,7 +19,10 @@
     "world",
     "save",
     "binary",
-    "parser"
+    "parser",
+    "level",
+    "inventory",
+    "playerdata"
   ],
   "author": "flaasz",
   "license": "MIT",
@@ -31,6 +34,7 @@
     "nbt-core.js",
     "snbt-converter.js",
     "mca-handler.js",
+    "inventory-management.js",
     "examples.js",
     "README.md"
   ],

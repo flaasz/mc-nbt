@@ -1,0 +1,183 @@
+# .github/workflows/publish.yml
+name: Publish to NPM
+
+on:
+  # Trigger on version tags (e.g., v1.0.0, v1.2.3)
+  push:
+    tags:
+      - 'v*'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+        type: string
+      tag:
+        description: 'NPM tag (latest, beta, alpha)'
+        required: false
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - beta
+          - alpha
+
+  # Trigger on releases
+  release:
+    types: [published]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run examples
+        run: node examples.js
+
+      - name: Validate package
+        run: npm pack --dry-run
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract version from tag
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=latest" >> $GITHUB_OUTPUT
+
+      - name: Set manual version
+        if: github.event_name == 'workflow_dispatch'
+        id: manual_version
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+
+      - name: Extract version from release
+        if: github.event_name == 'release'
+        id: release_version
+        run: |
+          VERSION=${{ github.event.release.tag_name }}
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update package.json version
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            VERSION="${{ steps.extract_version.outputs.version }}"
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ steps.manual_version.outputs.version }}"
+          else
+            VERSION="${{ steps.release_version.outputs.version }}"
+          fi
+          npm version $VERSION --no-git-tag-version
+
+      - name: Build package
+        run: |
+          # Ensure all files are present
+          echo "Validating package structure..."
+          ls -la
+          npm pack --dry-run
+
+      - name: Run final tests
+        run: npm test
+
+      - name: Publish to NPM
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            TAG="${{ steps.extract_version.outputs.tag }}"
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG="${{ steps.manual_version.outputs.tag }}"
+          else
+            TAG="${{ steps.release_version.outputs.tag }}"
+          fi
+          npm publish --tag $TAG
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.extract_version.outputs.version }}
+          body: |
+            Release ${{ steps.extract_version.outputs.version }}
+            
+            ## Changes
+            - Check the commit history for detailed changes
+            
+            ## Installation
+            ```bash
+            npm install minecraft-nbt-lib@${{ steps.extract_version.outputs.version }}
+            ```
+            
+            ## Documentation
+            See the [README](https://github.com/${{ github.repository }}/blob/main/README.md) for usage instructions.
+          draft: false
+          prerelease: false
+
+  # Notify on success/failure
+  notify:
+    needs: [test, publish]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify success
+        if: needs.publish.result == 'success'
+        run: |
+          echo "✅ Successfully published minecraft-nbt-lib to NPM!"
+          echo "📦 Package: https://www.npmjs.com/package/minecraft-nbt-lib"
+
+      - name: Notify failure
+        if: needs.test.result == 'failure' || needs.publish.result == 'failure'
+        run: |
+          echo "❌ Publish failed!"
+          echo "Check the workflow logs for details."
+          exit 1
