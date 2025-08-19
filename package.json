@@ -1,6 +1,6 @@
 {
   "name": "mc-nbt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A comprehensive Node.js library for reading, writing, and manipulating Minecraft NBT, DAT, and MCA files with SNBT and JSON conversion support",
   "main": "mc-nbt.js",
   "scripts": {
