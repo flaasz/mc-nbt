@@ -430,7 +430,6 @@ async function removeItemTypes() {
     await minecraftNBT.writeDATFile('playerdata/player.dat', playerData);
 }
 ```
-```
 
 ### SNBT and JSON Conversion
 
@@ -503,15 +502,3 @@ MIT License - see LICENSE file for details.
 ## Contributing
 
 Contributions are welcome! Please read the contributing guidelines and submit pull requests for any improvements.
-
-## Changelog
-
-### 1.0.0
-- Initial release
-- Full NBT, DAT, and MCA file support
-- SNBT and JSON conversion
-- Complete inventory management system
-- Player inventory manipulation (add, remove, modify items by slot or ID)
-- Slot-based and name-based item removal
-- Comprehensive validation and error handling
-- Complete test suite and documentation
