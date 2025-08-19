@@ -34,7 +34,7 @@ jobs:
       - name: Validate file structure
         run: |
           echo "Checking required files..."
-          test -f minecraft-nbt.js
+          test -f mc-nbt.js
           test -f nbt-core.js
           test -f snbt-converter.js
           test -f mca-handler.js
@@ -78,7 +78,7 @@ jobs:
       - name: Test import/export
         run: |
           node -e "
-          const lib = require('./minecraft-nbt');
+          const lib = require('./mc-nbt');
           console.log('✓ Main library imported');
           console.log('Available exports:', Object.keys(lib));
           console.log('✓ NBT:', typeof lib.NBT);
@@ -90,7 +90,7 @@ jobs:
       - name: Test NBT operations
         run: |
           node -e "
-          const lib = require('./minecraft-nbt');
+          const lib = require('./mc-nbt');
           
           // Test NBT creation
           const compound = lib.createCompound({ test: 'value', number: 42 });
@@ -110,7 +110,7 @@ jobs:
       - name: Test inventory operations
         run: |
           node -e "
-          const lib = require('./minecraft-nbt');
+          const lib = require('./mc-nbt');
           const { InventoryManager } = lib;
           
           // Create sample player data
@@ -194,7 +194,7 @@ jobs:
       - name: Memory usage test
         run: |
           node --max-old-space-size=128 -e "
-          const lib = require('./minecraft-nbt');
+          const lib = require('./mc-nbt');
           
           console.log('Testing memory usage with limited heap...');
           

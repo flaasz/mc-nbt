@@ -1,4 +1,4 @@
-// minecraft-nbt.js - Main library file
+// mc-nbt.js - Main library file
 const { NBT, TAG_TYPES, TYPE_NAMES } = require('./nbt-core');
 const { SNBTConverter } = require('./snbt-converter');
 const { MCAFile } = require('./mca-handler');
@@ -9,7 +9,7 @@ const path = require('path');
 class InventoryManager {
     constructor(playerData) {
         this.playerData = playerData;
-        this.minecraftNBT = require('./minecraft-nbt'); // Avoid circular dependency
+        this.minecraftNBT = require('./mc-nbt'); // Avoid circular dependency
     }
 
     getInventory() {

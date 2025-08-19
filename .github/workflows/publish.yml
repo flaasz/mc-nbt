@@ -154,7 +154,7 @@ jobs:
             
             ## Installation
             ```bash
-            npm install minecraft-nbt-lib@${{ steps.extract_version.outputs.version }}
+            npm install mc-nbt@${{ steps.extract_version.outputs.version }}
             ```
             
             ## Documentation
@@ -172,8 +172,8 @@ jobs:
       - name: Notify success
         if: needs.publish.result == 'success'
         run: |
-          echo "✅ Successfully published minecraft-nbt-lib to NPM!"
-          echo "📦 Package: https://www.npmjs.com/package/minecraft-nbt-lib"
+          echo "✅ Successfully published mc-nbt to NPM!"
+          echo "📦 Package: https://www.npmjs.com/package/mc-nbt"
 
       - name: Notify failure
         if: needs.test.result == 'failure' || needs.publish.result == 'failure'

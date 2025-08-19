@@ -1,5 +1,5 @@
 // inventory-management.js - Remove items from inventory by slot or name
-const minecraftNBT = require('./minecraft-nbt');
+const minecraftNBT = require('./mc-nbt');
 
 class InventoryManager {
     constructor(playerData) {

@@ -1,5 +1,5 @@
 // examples.js - Usage examples for the Minecraft NBT library
-const minecraftNBT = require('./minecraft-nbt');
+const minecraftNBT = require('./mc-nbt');
 const { InventoryManager } = minecraftNBT;
 
 async function examples() {
