@@ -22,13 +22,13 @@ A comprehensive Node.js library for reading, writing, and manipulating Minecraft
 ## Installation
 
 ```bash
-npm install minecraft-nbt-lib
+npm install minecraft-nbt
 ```
 
 ## Quick Start
 
 ```javascript
-const minecraftNBT = require('minecraft-nbt-lib');
+const minecraftNBT = require('minecraft-nbt');
 
 // Read any Minecraft file (auto-detects format)
 const data = await minecraftNBT.readFile('level.dat');
@@ -114,7 +114,7 @@ console.log(minecraftNBT.inspect(nbtData, maxDepth = 3));
 ### MCA (Region File) Operations
 
 ```javascript
-const { MCAFile } = require('minecraft-nbt-lib');
+const { MCAFile } = require('minecraft-nbt');
 
 // Load region file
 const mca = await MCAFile.load('r.0.0.mca');
@@ -146,7 +146,7 @@ await mca.save('modified_region.mca');
 ### Inventory Management
 
 ```javascript
-const { InventoryManager } = require('minecraft-nbt-lib');
+const { InventoryManager } = require('minecraft-nbt');
 
 // Load player data
 const playerData = await minecraftNBT.readDATFile('playerdata/player.dat');
@@ -260,7 +260,7 @@ const item = {
 ### Editing Level Data
 
 ```javascript
-const minecraftNBT = require('minecraft-nbt-lib');
+const minecraftNBT = require('minecraft-nbt');
 
 async function editLevel() {
     // Load level.dat
