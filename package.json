@@ -1,0 +1,47 @@
+{
+  "name": "minecraft-nbt",
+  "version": "1.0.0",
+  "description": "A comprehensive Node.js library for reading, writing, and manipulating Minecraft NBT, DAT, and MCA files with SNBT and JSON conversion support",
+  "main": "minecraft-nbt.js",
+  "scripts": {
+    "test": "node examples.js",
+    "example": "node examples.js",
+    "benchmark": "node -e \"require('./examples').performanceTest()\""
+  },
+  "keywords": [
+    "minecraft",
+    "nbt",
+    "dat",
+    "mca",
+    "snbt",
+    "region",
+    "chunk",
+    "world",
+    "save",
+    "binary",
+    "parser"
+  ],
+  "author": "flaasz",
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "minecraft-nbt.js",
+    "nbt-core.js",
+    "snbt-converter.js",
+    "mca-handler.js",
+    "examples.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flaasz/minecraft-nbt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/flaasz/minecraft-nbt/issues"
+  },
+  "homepage": "https://github.com/flaasz/minecraft-nbt#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}
