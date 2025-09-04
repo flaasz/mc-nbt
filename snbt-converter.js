@@ -50,7 +50,7 @@ class SNBTConverter {
                     return '{}';
                 }
                 const compoundItems = entries.map(([key, tag]) => {
-                    const keyStr = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) ? key : `"${key}"`;
+                    const keyStr = /^[a-zA-Z_][a-zA-Z0-9_\-\.\+]*$/.test(key) ? key : `"${key}"`;
                     const valueStr = this.toSNBT(tag, indent + 1);
                     return `${keyStr}:${valueStr}`;
                 });
@@ -329,7 +329,7 @@ class SNBTParser {
         }
         
         let key = '';
-        while (this.pos < this.input.length && /[a-zA-Z0-9_]/.test(this.peek())) {
+        while (this.pos < this.input.length && /[a-zA-Z0-9_\-\.\+]/.test(this.peek())) {
             key += this.consume();
         }
         return key;
