@@ -5,13 +5,14 @@ A comprehensive Node.js library for reading, writing, and manipulating Minecraft
 ## Features
 
 - **Complete NBT Support**: Read and write all NBT tag types (Byte, Short, Int, Long, Float, Double, String, ByteArray, IntArray, LongArray, List, Compound)
-- **Multiple File Formats**: 
+- **Multiple File Formats**:
   - `.nbt` files (uncompressed NBT)
   - `.dat` files (gzip-compressed NBT, like level.dat, player data)
   - `.mca` files (Minecraft region files containing multiple chunks)
   - `.snbt` files (Stringified NBT text format)
   - `.json` files (with type preservation)
 - **Format Conversion**: Convert between NBT, SNBT, and JSON formats
+- **Buffer Operations**: Direct buffer parsing for remote files, SFTP, APIs, and custom adapters
 - **Data Integrity**: Preserves exact data types and values without corruption
 - **Auto-detection**: Automatically detects file types based on extension and content
 - **Chunk Manipulation**: Full support for reading and writing individual chunks in region files
@@ -75,6 +76,26 @@ const nbtFromSNBT = minecraftNBT.fromSNBT(snbtString);
 // Convert to JSON
 const jsonObject = minecraftNBT.toJSON(nbtData);
 const nbtFromJSON = minecraftNBT.fromJSON(jsonObject, inferTypes = true);
+```
+
+#### Buffer Operations (Remote/Blob Support)
+
+```javascript
+// Parse NBT data from buffers (useful for remote files, SFTP, APIs)
+const buffer = await yourAdapter.read('level.dat'); // User provides buffer from any source
+const nbtData = minecraftNBT.parseNBT(buffer);      // Parse uncompressed NBT
+const datData = minecraftNBT.parseCompressedNBT(buffer); // Parse compressed NBT (.dat files)
+
+// Convert NBT data back to buffers
+const nbtBuffer = minecraftNBT.stringifyNBT(nbtData);           // Create uncompressed buffer
+const compressedBuffer = minecraftNBT.stringifyCompressedNBT(nbtData); // Create compressed buffer
+
+// Example: Remote file editing via user-provided adapter
+const remoteBuffer = await sftpClient.get('/server/world/level.dat');
+const levelData = minecraftNBT.parseCompressedNBT(remoteBuffer);
+minecraftNBT.setValue(levelData, 'Data.GameType', { type: 'int', value: 1 });
+const modifiedBuffer = minecraftNBT.stringifyCompressedNBT(levelData);
+await sftpClient.put(modifiedBuffer, '/server/world/level.dat');
 ```
 
 #### Data Manipulation

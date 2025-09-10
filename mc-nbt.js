@@ -4,6 +4,7 @@ const { SNBTConverter } = require('./snbt-converter');
 const { MCAFile } = require('./mca-handler');
 const fs = require('fs').promises;
 const path = require('path');
+const zlib = require('zlib');
 
 // Inventory Management Classes
 class InventoryManager {
@@ -328,6 +329,25 @@ class MinecraftNBT {
 
     fromJSON(jsonData, inferTypes = true) {
         return SNBTConverter.fromJSON(jsonData, inferTypes);
+    }
+
+    // Buffer operations for remote/blob data
+    parseNBT(buffer) {
+        return NBT.parse(buffer);
+    }
+
+    parseCompressedNBT(buffer) {
+        const decompressed = zlib.gunzipSync(buffer);
+        return NBT.parse(decompressed);
+    }
+
+    stringifyNBT(nbtData) {
+        return NBT.stringify(nbtData);
+    }
+
+    stringifyCompressedNBT(nbtData) {
+        const buffer = NBT.stringify(nbtData);
+        return zlib.gzipSync(buffer);
     }
 
     // Utility methods for editing NBT data
