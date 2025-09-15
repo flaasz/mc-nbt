@@ -290,6 +290,33 @@ class MinecraftNBT {
         }
     }
 
+    // Async MCA file operations for improved performance
+    async readMCAFileAsync(filepath, options = {}) {
+        return await MCAFile.loadAsync(filepath, options);
+    }
+
+    async writeMCAFileAsync(filepath, mcaData) {
+        if (mcaData instanceof MCAFile) {
+            await mcaData.saveAsync(filepath);
+        } else {
+            const mca = MCAFile.fromJSON(mcaData);
+            await mca.saveAsync(filepath);
+        }
+    }
+
+    // Bulk MCA operations
+    async readMultipleMCAFiles(filepaths, options = {}) {
+        return await MCAFile.loadMultipleAsync(filepaths, options);
+    }
+
+    async writeMultipleMCAFiles(mcaFiles, options = {}) {
+        return await MCAFile.saveMultipleAsync(mcaFiles, options);
+    }
+
+    async processMCADirectory(directoryPath, processFunction, options = {}) {
+        return await MCAFile.processDirectoryAsync(directoryPath, processFunction, options);
+    }
+
     // SNBT file operations
     async readSNBTFile(filepath) {
         const content = await fs.readFile(filepath, 'utf8');
